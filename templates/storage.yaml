@@ -24,6 +24,8 @@ spec:
   volumeClaimTemplates:
   - metadata:
       name: data-storage
+      annotations:
+        volume.beta.kubernetes.io/storage-class: "cephfs"
     spec:
       storageClassName: {{ .Values.cassandra.storageClassName }}
       accessModes:
