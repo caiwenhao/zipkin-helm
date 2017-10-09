@@ -25,7 +25,7 @@ ui:
     cpuLimit: 300m
 
 dependencies:
-  enabled: true
+  enabled: false
   cron: "0 22 * * *"
   imageVersion: 1.9.0
   resources:

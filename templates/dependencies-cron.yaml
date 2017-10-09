@@ -1,6 +1,6 @@
 {{if eq .Values.dependencies.enabled true}}
-apiVersion: batch/v1
-kind: CronJob
+apiVersion: batch/v2alpha1
+kind: CronJob 
 metadata:
   name: zipkin-dependencies
   labels:
