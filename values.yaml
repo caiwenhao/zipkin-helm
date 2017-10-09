@@ -66,6 +66,7 @@ cassandra:
   tag: 1
   replicas: 1
   pvSize: 20Gi
+  storageClassName: ceph
   resources:
     ramMb: 3000
     cpuRequest: 200m
