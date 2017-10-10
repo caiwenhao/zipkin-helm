@@ -14,66 +14,89 @@ spec:
   selector:
     app: zipkin-cassandra
 ---
-apiVersion: apps/v1beta1
+apiVersion: "apps/v1beta1"
 kind: StatefulSet
 metadata:
   name: zipkin-cassandra
 spec:
   serviceName: zipkin-cassandra
   replicas: {{ .Values.cassandra.replicas }}
-  volumeClaimTemplates:
-  - metadata:
-      name: data-storage
-      annotations:
-        volume.beta.kubernetes.io/storage-class: "cephfs"
-    spec:
-      storageClassName: {{ .Values.cassandra.storageClassName }}
-      accessModes:
-       - ReadWriteOnce
-      resources:
-        requests:
-          storage: {{ .Values.cassandra.pvSize }}
   template:
     metadata:
       labels:
         app: zipkin-cassandra
     spec:
-      initContainers:
-      - name: volume-mount-hack
-        image: busybox
-        command: ["sh", "-c", "chmod -R 777 /cassandra/data"]
-        volumeMounts:
-        - name: data-storage
-          mountPath: /cassandra/data
       containers:
       - name: zipkin-cassandra
         image: {{ .Values.cassandra.image }}:{{ .Values.cassandra.tag }}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 7000
+          name: intra-node
+        - containerPort: 7001
+          name: tls-intra-node
+        - containerPort: 7199
+          name: jmx
+        - containerPort: 9042
+          name: cql
+        resources:
+          limits:
+            cpu: "{{ .Values.cassandra.resources.cpuLimit }}"
+            memory: "{{ .Values.cassandra.resources.ramMb }}Mi"
+          requests:
+           cpu: "{{ .Values.cassandra.resources.cpuRequest }}"
+           memory: "{{ .Values.cassandra.resources.ramMb }}Mi"
+        securityContext:
+          capabilities:
+            add:
+              - IPC_LOCK
         lifecycle:
           preStop:
             exec:
               command: ["/bin/sh", "-c", "PID=$(pidof java) && kill $PID && while ps -p $PID > /dev/null; do sleep 1; done"]
-        ports:
-        - containerPort: 9160
-        - containerPort: 7000
-        - containerPort: 7001
-        - containerPort: 7199
-        - containerPort: 9042
-        livenessProbe:
-          initialDelaySeconds: {{ .Values.cassandra.probeStartupDelay }}
-          tcpSocket:
-            port: 9042
+        env:
+          - name: MAX_HEAP_SIZE
+            value: 512M
+          - name: HEAP_NEWSIZE
+            value: 100M
+          - name: CASSANDRA_SEEDS
+            value: "cassandra-0.cassandra.default.svc.cluster.local"
+          - name: CASSANDRA_CLUSTER_NAME
+            value: "K8Demo"
+          - name: CASSANDRA_DC
+            value: "DC1-K8Demo"
+          - name: CASSANDRA_RACK
+            value: "Rack1-K8Demo"
+          - name: CASSANDRA_AUTO_BOOTSTRAP
+            value: "false"
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
         readinessProbe:
-          initialDelaySeconds: {{ .Values.cassandra.probeStartupDelay }}
-          tcpSocket:
-            port: 9042
-        resources:
-          limits:
-            cpu: "{{ .Values.cassandra.resources.cpuLimit }}"
-            memory: "{{ .Values.cassandra.resources.ramMb }}Mi" # TODO fix this, this field id mi but the value is mb. There will be slight wastage
-          requests:
-            cpu: "{{ .Values.cassandra.resources.cpuRequest }}"
-            memory: "{{ .Values.cassandra.resources.ramMb }}Mi" # TODO fix this, this field id mi but the value is mb. There will be slight wastage
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - /ready-probe.sh
+          initialDelaySeconds: 15
+          timeoutSeconds: 5
+        # These volume mounts are persistent. They are like inline claims,
+        # but not exactly because the names need to match exactly one of
+        # the stateful pod volumes.
         volumeMounts:
-          - name: data-storage
-            mountPath: /cassandra/data
-
+        - name: cassandra-data
+          mountPath: /cassandra_data
+  # These are converted to volume claims by the controller
+  # and mounted at the paths mentioned above.
+  # do not use these in production until ssd GCEPersistentDisk or other ssd pd
+  volumeClaimTemplates:
+  - metadata:
+      name: cassandra-data
+      annotations:
+        volume.beta.kubernetes.io/storage-class: {{ .Values.cassandra.storageClassName }}
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ .Values.cassandra.pvSize }}

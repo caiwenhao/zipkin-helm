@@ -61,9 +61,9 @@ cassandra:
   contactPoints: zipkin-cassandra:9042
   localdc: datacenter1
   ensureSchema: false
-  image: openzipkin/zipkin-cassandra
+  image: reg.lifesense.com/openzipkin/cassandra
   probeStartupDelay: 120
-  tag: 1
+  tag: v12
   replicas: 1
   pvSize: 20Gi
   storageClassName: cephfs
