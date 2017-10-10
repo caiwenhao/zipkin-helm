@@ -1,13 +1,13 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: zipkin
+  name: zipkin-ui
   labels:
-      app: zipkin
+      app: zipkin-ui
 spec:
   ports:
    - port: 9411
      name: "http"
      targetPort: 9411
   selector:
-    app: zipkin-collector
+    app: zipkin-ui
