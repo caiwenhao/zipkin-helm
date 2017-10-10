@@ -1,9 +1,0 @@
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: zipkin-storage
-  labels:
-data:
-  cassandra.username: "zipkin"
-  cassandra.localdc: "DC1-K8Demo"
-  cassandra.contactpoints: "zipkin-cassandra:9042"

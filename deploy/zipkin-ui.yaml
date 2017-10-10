@@ -1,3 +1,17 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: zipkin-ui
+  labels:
+      app: zipkin-ui
+spec:
+  ports:
+   - port: 80
+     name: "http"
+     targetPort: 80
+  selector:
+    app: zipkin-ui
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -16,18 +30,13 @@ spec:
     spec:
       containers:
         - name: zipkin-ui
-          image: "reg.lifesense.com/openzipkin/zipkin:1.31.1"
+          image: "reg.lifesense.com/openzipkin/zipkin-ui:latest"
           ports:
-            - containerPort: 9411
+            - containerPort: 80
           livenessProbe:
             initialDelaySeconds: 100
             tcpSocket:
-              port: 9411
-          readinessProbe:
-            initialDelaySeconds: 100
-            httpGet:
-              path: /health
-              port: 9411
+              port: 80
           resources:
             limits:
               cpu: "300m"
@@ -36,38 +45,5 @@ spec:
               cpu: "800m"
               memory: "900Mi" # TODO fix this, this field id mi but the value is mb. There will be slight wastage
           env:
-            - name: POD_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.namespace
-            - name: QUERY_PORT
-              value: "9411"
-            - name: JAVA_OPTS
-              value: "-XX:ConcGCThreads=2-XX:ParallelGCThreads=2 -Djava.util.concurrent.ForkJoinPool.common.parallelism=2 -Xms800M -Xmx800M -XX:+UseG1GC -server"
-            - name: QUERY_ENABLED
-              value: "true"
-            - name: STORAGE_TYPE
-              value: "cassandra"
-            - name: CASSANDRA_USERNAME
-              valueFrom:
-                configMapKeyRef:
-                  name: zipkin-storage
-                  key: cassandra.username
-            - name: CASSANDRA_CONTACT_POINTS
-              valueFrom:
-                configMapKeyRef:
-                  name: zipkin-storage
-                  key: cassandra.contactpoints
-            - name: CASSANDRA_LOCAL_DC
-              valueFrom:
-                configMapKeyRef:
-                  name: zipkin-storage
-                  key: cassandra.localdc
-            - name: CASSANDRA_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: zipkin
-                  key: cassandra.password
-            - name: CASSANDRA_ENSURE_SCHEMA
-              value: "true"
+            - name: ZIPKIN_BASE_URL
+              value: "http://zipkin:9411"
