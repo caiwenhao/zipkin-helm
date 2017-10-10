@@ -5,5 +5,5 @@ metadata:
   labels:
 data:
   cassandra.username: "zipkin"
-  cassandra.localdc: "datacenter1"
+  cassandra.localdc: "DC1-K8Demo"
   cassandra.contactpoints: "zipkin-cassandra:9042"
