@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
       - name: zipkin-cassandra
-        image: reg.lifesense.com/openzipkin/cassandra:v12
+        image: reg.lifesense.com/openzipkin/zipkin-cassandra:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 7000
@@ -70,14 +70,6 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: status.podIP
-        readinessProbe:
-          exec:
-            command:
-            - /bin/bash
-            - -c
-            - /ready-probe.sh
-          initialDelaySeconds: 15
-          timeoutSeconds: 5
         # These volume mounts are persistent. They are like inline claims,
         # but not exactly because the names need to match exactly one of
         # the stateful pod volumes.
